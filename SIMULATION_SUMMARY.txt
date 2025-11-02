@@ -1,0 +1,41 @@
+================================================================================
+  IMPROVED TIRE SIMULATION RESULTS
+  2023 Monaco Grand Prix - Driver: VER
+================================================================================
+
+CALIBRATED MODEL COEFFICIENTS USED:
+  BETA_DECAY:    1e-05 (optimized)
+  GAMMA_LAPTIME: 0.05 (optimized)
+
+SCENARIOS TESTED:
+  Baseline (Standard Tire): wear coefficient × 1.00
+  15% Improved Tire: wear coefficient × 0.85
+  30% Improved Tire: wear coefficient × 0.70
+  50% Improved Tire: wear coefficient × 0.50
+
+RESULTS SUMMARY:
+--------------------------------------------------------------------------------
+
+15% Improved Tire:
+  Total time saved: 2.54s (0.04 minutes)
+  Average per lap:  0.034s
+  Maximum benefit:  0.307s
+  By stint:
+    Stint 1 (MEDIUM      ):   1.01s over 53 laps
+    Stint 2 (INTERMEDIATE):   1.53s over 22 laps
+
+30% Improved Tire:
+  Total time saved: 6.19s (0.10 minutes)
+  Average per lap:  0.083s
+  Maximum benefit:  0.670s
+  By stint:
+    Stint 1 (MEDIUM      ):   2.48s over 53 laps
+    Stint 2 (INTERMEDIATE):   3.71s over 22 laps
+
+50% Improved Tire:
+  Total time saved: 14.50s (0.24 minutes)
+  Average per lap:  0.193s
+  Maximum benefit:  1.262s
+  By stint:
+    Stint 1 (MEDIUM      ):   5.86s over 53 laps
+    Stint 2 (INTERMEDIATE):   8.64s over 22 laps

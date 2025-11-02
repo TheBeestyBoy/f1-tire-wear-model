@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python calibrate_tire_model.py:*)",
+      "Bash(python:*)",
+      "Bash(timeout 5 ping:*)",
+      "Bash(nul)",
+      "Bash(exit 0)",
+      "Bash(timeout 30 ping:*)",
+      "Bash(timeout 60 ping:*)",
+      "Bash(timeout 120 ping:*)",
+      "Bash(dir:*)",
+      "Bash(taskkill:*)",
+      "Bash(git init:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
