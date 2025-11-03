@@ -228,65 +228,325 @@ print(f"\n[OK] Results saved to: {output_file}")
 #                          VISUALIZATION
 # ============================================================================
 
-print(f"\n[5/5] Creating visualization...")
+print(f"\n[5/5] Creating visualizations...")
 
-fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+# Set up professional blue theme for presentations
+plt.style.use('seaborn-v0_8-darkgrid')
+BLUE_DARK = '#0A2647'      # Deep navy blue for backgrounds
+BLUE_PRIMARY = '#144272'   # Primary blue
+BLUE_LIGHT = '#2C74B3'     # Light blue for accents
+BLUE_ACCENT = '#4A90E2'    # Bright accent blue
+ORANGE_ACCENT = '#FF6B35'  # Warm orange for contrast
+WHITE = '#FFFFFF'
+GRAY_LIGHT = '#E8E8E8'
 
-# Plot 1: Actual vs Predicted
-ax1 = axes[0, 0]
-ax1.scatter(df['lap_number'], df['lap_time_seconds'], alpha=0.6, s=70, label='Actual', c='blue')
-ax1.plot(df['lap_number'], df['predicted_lap_time'], 'r-', linewidth=2.5, label='Predicted')
-ax1.set_xlabel('Lap Number', fontweight='bold', fontsize=12)
-ax1.set_ylabel('Lap Time (seconds)', fontweight='bold', fontsize=12)
-ax1.set_title(f'{YEAR} {RACE} - {DRIVER} | RMSE = {rmse:.3f}s', fontweight='bold', fontsize=14)
-ax1.legend(fontsize=11)
-ax1.grid(True, alpha=0.3)
+# Create output directory for individual graphs
+output_dir = Path('presentation_graphs')
+output_dir.mkdir(exist_ok=True)
 
-# Plot 2: Residuals
-ax2 = axes[0, 1]
-colors = df['compound'].map({
-    'SOFT': 'red', 'MEDIUM': 'orange', 'HARD': 'white',
-    'INTERMEDIATE': 'cyan', 'WET': 'blue'
-})
-ax2.scatter(df['lap_number'], df['residual'], alpha=0.6, s=55, c=colors, edgecolors='black', linewidths=0.5)
-ax2.axhline(0, color='red', linestyle='--', linewidth=2)
-ax2.axhline(3, color='green', linestyle=':', linewidth=1, label='±3s')
-ax2.axhline(-3, color='green', linestyle=':', linewidth=1)
-ax2.set_xlabel('Lap Number', fontweight='bold', fontsize=12)
-ax2.set_ylabel('Prediction Error (seconds)', fontweight='bold', fontsize=12)
-ax2.set_title('Prediction Residuals', fontweight='bold', fontsize=14)
-ax2.legend(fontsize=11)
-ax2.grid(True, alpha=0.3)
+# ============================================================================
+# GRAPH 1: Actual vs Predicted Lap Times (with Tire Upgrade Scenarios)
+# ============================================================================
 
-# Plot 3: Track Wetness
-ax3 = axes[1, 0]
-ax3.plot(df['lap_number'], df['wetness'], 'b-', linewidth=2.5)
-ax3.fill_between(df['lap_number'], 0, df['wetness'], alpha=0.3, color='blue')
-ax3.axhline(OPTIMAL_PARAMS['inter_optimal_wet'], color='red', linestyle='--',
-           linewidth=1.5, label=f'INTER optimal ({OPTIMAL_PARAMS["inter_optimal_wet"]:.2f})')
-ax3.set_xlabel('Lap Number', fontweight='bold', fontsize=12)
-ax3.set_ylabel('Track Wetness (0=dry, 1=wet)', fontweight='bold', fontsize=12)
-ax3.set_title('Track Condition Evolution', fontweight='bold', fontsize=14)
-ax3.legend(fontsize=11)
-ax3.grid(True, alpha=0.3)
+# Define tire upgrade scenarios (percentage improvement in tire performance)
+upgrade_scenarios = [
+    {'percent': 15, 'color': '#00FF88', 'label': '15% Tire Upgrade'},
+    {'percent': 25, 'color': '#FFD700', 'label': '25% Tire Upgrade'},
+    {'percent': 50, 'color': '#FF1E9D', 'label': '50% Tire Upgrade'}
+]
 
-# Plot 4: Error Distribution
-ax4 = axes[1, 1]
-ax4.hist(df['residual'], bins=25, alpha=0.7, edgecolor='black', color='skyblue')
-ax4.axvline(0, color='red', linestyle='--', linewidth=2.5, label='Zero error')
-ax4.axvline(rmse, color='orange', linestyle=':', linewidth=2, label=f'RMSE ({rmse:.2f}s)')
-ax4.axvline(-rmse, color='orange', linestyle=':', linewidth=2)
-ax4.set_xlabel('Prediction Error (seconds)', fontweight='bold', fontsize=12)
-ax4.set_ylabel('Frequency', fontweight='bold', fontsize=12)
-ax4.set_title('Error Distribution', fontweight='bold', fontsize=14)
-ax4.legend(fontsize=11)
-ax4.grid(True, alpha=0.3, axis='y')
+for scenario in upgrade_scenarios:
+    upgrade_percent = scenario['percent']
+    upgrade_color = scenario['color']
+    upgrade_label = scenario['label']
+
+    # Calculate upgraded tire performance
+    # Reduce tire degradation factor by the upgrade percentage
+    df['tire_factor_upgraded'] = 1 + (df['tire_factor'] - 1) * (1 - upgrade_percent / 100)
+    df['predicted_upgraded'] = df['baseline'] * df['tire_factor_upgraded']
+
+    # Calculate time savings
+    total_time_saved = (df['predicted_lap_time'] - df['predicted_upgraded']).sum()
+    avg_lap_improvement = (df['predicted_lap_time'] - df['predicted_upgraded']).mean()
+
+    # Create figure
+    fig1, ax1 = plt.subplots(figsize=(14, 8), facecolor=BLUE_DARK)
+    ax1.set_facecolor(BLUE_PRIMARY)
+
+    # Plot actual lap times
+    ax1.scatter(df['lap_number'], df['lap_time_seconds'],
+               alpha=0.7, s=100, label='Actual Lap Times',
+               c=BLUE_ACCENT, edgecolors=WHITE, linewidths=1.5, zorder=4)
+
+    # Plot baseline prediction (original)
+    ax1.plot(df['lap_number'], df['predicted_lap_time'],
+            color=ORANGE_ACCENT, linewidth=3, label='Baseline Prediction',
+            alpha=0.9, zorder=3, linestyle='--')
+
+    # Plot upgraded prediction
+    ax1.plot(df['lap_number'], df['predicted_upgraded'],
+            color=upgrade_color, linewidth=4, label=f'{upgrade_label} Prediction',
+            alpha=0.95, zorder=2)
+
+    # Fill area between baseline and upgraded to show improvement
+    ax1.fill_between(df['lap_number'],
+                     df['predicted_lap_time'],
+                     df['predicted_upgraded'],
+                     alpha=0.3, color=upgrade_color, zorder=1,
+                     label=f'Time Saved per Lap')
+
+    # Styling
+    ax1.set_xlabel('Lap Number', fontweight='bold', fontsize=16, color=WHITE)
+    ax1.set_ylabel('Lap Time (seconds)', fontweight='bold', fontsize=16, color=WHITE)
+    ax1.set_title(f'{YEAR} {RACE} Grand Prix - {DRIVER}\n{upgrade_label} Performance Analysis',
+                 fontweight='bold', fontsize=20, color=WHITE, pad=20)
+    ax1.legend(fontsize=13, loc='upper right', framealpha=0.95, facecolor=BLUE_PRIMARY,
+              edgecolor=WHITE, labelcolor=WHITE)
+    ax1.grid(True, alpha=0.25, color=WHITE, linestyle='--', linewidth=0.8)
+    ax1.tick_params(colors=WHITE, labelsize=12)
+
+    # Add statistics box with upgrade benefits
+    stats_text = (f'Total Laps: {len(df)}\n'
+                  f'Total Time Saved: {total_time_saved:.2f}s\n'
+                  f'Avg Lap Improvement: {avg_lap_improvement:.3f}s\n'
+                  f'Tire Degradation: -{upgrade_percent}%')
+    ax1.text(0.02, 0.98, stats_text, transform=ax1.transAxes,
+            fontsize=12, verticalalignment='top', color=WHITE, family='monospace',
+            bbox=dict(boxstyle='round', facecolor=BLUE_PRIMARY, alpha=0.9, edgecolor=WHITE))
+
+    # Add tire degradation annotations every 5 laps along the top
+    y_min, y_max = ax1.get_ylim()
+    y_range = y_max - y_min
+
+    # Position annotations in the middle-upper area to avoid overlapping with corner text boxes
+    y_annotation = y_max - (y_range * 0.15)  # Position at 85% height (leaves room for title and margins)
+
+    # Get lap numbers at intervals of 5
+    annotation_laps = range(5, int(df['lap_number'].max()) + 1, 5)
+
+    # Calculate x-axis range to determine which laps are in the left/right corners
+    x_min, x_max = df['lap_number'].min(), df['lap_number'].max()
+    x_range = x_max - x_min
+    left_margin = x_min + (x_range * 0.25)  # Skip first 25% (left stats box)
+    right_margin = x_max - (x_range * 0.25)  # Skip last 25% (right legend box)
+
+    for lap_num in annotation_laps:
+        # Skip laps in the corner areas where text boxes are
+        if lap_num < left_margin or lap_num > right_margin:
+            continue
+
+        # Find the closest lap in the dataframe
+        lap_data = df[df['lap_number'] == lap_num]
+        if not lap_data.empty:
+            # Calculate degradation percentage at this lap
+            # Degradation = (tire_factor - 1) * 100, adjusted for upgrade
+            baseline_deg = (lap_data['tire_factor'].iloc[0] - 1) * 100
+            upgraded_deg = (lap_data['tire_factor_upgraded'].iloc[0] - 1) * 100
+
+            # Annotate with arrow pointing down to the upgraded prediction line
+            annotation_text = f'{upgraded_deg:.1f}%'
+            ax1.annotate(annotation_text,
+                        xy=(lap_num, lap_data['predicted_upgraded'].iloc[0]),
+                        xytext=(lap_num, y_annotation),
+                        ha='center', va='bottom',
+                        fontsize=10, color=upgrade_color, fontweight='bold',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor=BLUE_DARK,
+                                 edgecolor=upgrade_color, linewidth=1.5, alpha=0.85),
+                        arrowprops=dict(arrowstyle='->', color=upgrade_color,
+                                       linewidth=1.5, alpha=0.7))
+
+    plt.tight_layout()
+    graph1_file = output_dir / f'1a_lap_times_{upgrade_percent}pct_upgrade_{YEAR}_{RACE}_{DRIVER}.png'
+    plt.savefig(graph1_file, dpi=300, bbox_inches='tight', facecolor=BLUE_DARK)
+    print(f"[OK] Graph 1 ({upgrade_percent}% upgrade) saved: {graph1_file}")
+    plt.close()
+
+# Also create the baseline comparison without upgrades
+fig1, ax1 = plt.subplots(figsize=(14, 8), facecolor=BLUE_DARK)
+ax1.set_facecolor(BLUE_PRIMARY)
+
+# Plot actual lap times with gradient effect
+ax1.scatter(df['lap_number'], df['lap_time_seconds'],
+           alpha=0.8, s=120, label='Actual Lap Times',
+           c=BLUE_ACCENT, edgecolors=WHITE, linewidths=1.5, zorder=3)
+
+# Plot predicted lap times
+ax1.plot(df['lap_number'], df['predicted_lap_time'],
+        color=ORANGE_ACCENT, linewidth=3.5, label='Predicted Lap Times',
+        alpha=0.95, zorder=2)
+
+# Fill area between for visual effect
+ax1.fill_between(df['lap_number'],
+                 df['predicted_lap_time'],
+                 df['lap_time_seconds'],
+                 alpha=0.2, color=GRAY_LIGHT, zorder=1)
+
+# Styling
+ax1.set_xlabel('Lap Number', fontweight='bold', fontsize=16, color=WHITE)
+ax1.set_ylabel('Lap Time (seconds)', fontweight='bold', fontsize=16, color=WHITE)
+ax1.set_title(f'{YEAR} {RACE} Grand Prix - {DRIVER}\nBaseline Lap Time Prediction Model (RMSE = {rmse:.2f}s)',
+             fontweight='bold', fontsize=20, color=WHITE, pad=20)
+ax1.legend(fontsize=14, loc='upper right', framealpha=0.95, facecolor=BLUE_PRIMARY,
+          edgecolor=WHITE, labelcolor=WHITE)
+ax1.grid(True, alpha=0.25, color=WHITE, linestyle='--', linewidth=0.8)
+ax1.tick_params(colors=WHITE, labelsize=12)
+
+# Add annotations
+ax1.text(0.02, 0.98, f'Total Laps: {len(df)}', transform=ax1.transAxes,
+        fontsize=13, verticalalignment='top', color=WHITE,
+        bbox=dict(boxstyle='round', facecolor=BLUE_PRIMARY, alpha=0.9, edgecolor=WHITE))
 
 plt.tight_layout()
-plot_file = f'predictions_{YEAR}_{RACE}_{DRIVER}.png'
-plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-print(f"[OK] Visualization saved to: {plot_file}")
+graph1_file = output_dir / f'1_lap_times_baseline_{YEAR}_{RACE}_{DRIVER}.png'
+plt.savefig(graph1_file, dpi=300, bbox_inches='tight', facecolor=BLUE_DARK)
+print(f"[OK] Graph 1 (baseline) saved: {graph1_file}")
+plt.close()
 
+# ============================================================================
+# GRAPH 2: Prediction Residuals by Compound
+# ============================================================================
+fig2, ax2 = plt.subplots(figsize=(14, 8), facecolor=BLUE_DARK)
+ax2.set_facecolor(BLUE_PRIMARY)
+
+# Color mapping for tire compounds
+compound_colors = {
+    'SOFT': '#FF1E1E',
+    'MEDIUM': '#FFD700',
+    'HARD': '#E8E8E8',
+    'INTERMEDIATE': '#00FF00',
+    'WET': '#0066FF'
+}
+
+# Plot residuals with compound-specific colors
+for compound in df['compound'].unique():
+    compound_data = df[df['compound'] == compound]
+    ax2.scatter(compound_data['lap_number'], compound_data['residual'],
+               alpha=0.75, s=100, label=compound,
+               c=compound_colors.get(compound, BLUE_ACCENT),
+               edgecolors=WHITE, linewidths=1.2, zorder=3)
+
+# Reference lines
+ax2.axhline(0, color=ORANGE_ACCENT, linestyle='-', linewidth=3, alpha=0.9, zorder=2, label='Perfect Prediction')
+ax2.axhline(3, color='#00FF88', linestyle='--', linewidth=2, alpha=0.7, zorder=1)
+ax2.axhline(-3, color='#00FF88', linestyle='--', linewidth=2, alpha=0.7, zorder=1)
+ax2.fill_between(df['lap_number'], -3, 3, alpha=0.15, color='#00FF88', zorder=0)
+
+# Styling
+ax2.set_xlabel('Lap Number', fontweight='bold', fontsize=16, color=WHITE)
+ax2.set_ylabel('Prediction Error (seconds)', fontweight='bold', fontsize=16, color=WHITE)
+ax2.set_title('Model Prediction Accuracy by Tire Compound',
+             fontweight='bold', fontsize=20, color=WHITE, pad=20)
+ax2.legend(fontsize=13, loc='best', framealpha=0.95, facecolor=BLUE_PRIMARY,
+          edgecolor=WHITE, labelcolor=WHITE, ncol=2)
+ax2.grid(True, alpha=0.25, color=WHITE, linestyle='--', linewidth=0.8)
+ax2.tick_params(colors=WHITE, labelsize=12)
+
+# Add statistics box
+stats_text = f'MAE: {mae:.2f}s\nMax Error: {max_error:.2f}s\nWithin ±3s: {(df["residual"].abs() <= 3).sum()}/{len(df)} laps'
+ax2.text(0.02, 0.98, stats_text, transform=ax2.transAxes,
+        fontsize=12, verticalalignment='top', color=WHITE, family='monospace',
+        bbox=dict(boxstyle='round', facecolor=BLUE_PRIMARY, alpha=0.9, edgecolor=WHITE))
+
+plt.tight_layout()
+graph2_file = output_dir / f'2_residuals_{YEAR}_{RACE}_{DRIVER}.png'
+plt.savefig(graph2_file, dpi=300, bbox_inches='tight', facecolor=BLUE_DARK)
+print(f"[OK] Graph 2 saved: {graph2_file}")
+plt.close()
+
+# ============================================================================
+# GRAPH 3: Track Wetness Evolution
+# ============================================================================
+fig3, ax3 = plt.subplots(figsize=(14, 8), facecolor=BLUE_DARK)
+ax3.set_facecolor(BLUE_PRIMARY)
+
+# Create gradient effect for wetness
+ax3.plot(df['lap_number'], df['wetness'],
+        color=BLUE_ACCENT, linewidth=4, label='Track Wetness', alpha=0.95, zorder=3)
+ax3.fill_between(df['lap_number'], 0, df['wetness'],
+                alpha=0.4, color=BLUE_LIGHT, zorder=2)
+
+# Add optimal intermediate line
+ax3.axhline(OPTIMAL_PARAMS['inter_optimal_wet'],
+           color=ORANGE_ACCENT, linestyle='--', linewidth=2.5, alpha=0.9,
+           label=f'Optimal for Intermediates ({OPTIMAL_PARAMS["inter_optimal_wet"]:.2f})', zorder=1)
+
+# Shade optimal zone
+ax3.fill_between(df['lap_number'],
+                OPTIMAL_PARAMS['inter_optimal_wet'] * 0.9,
+                OPTIMAL_PARAMS['inter_optimal_wet'] * 1.1,
+                alpha=0.2, color=ORANGE_ACCENT, zorder=0)
+
+# Styling
+ax3.set_xlabel('Lap Number', fontweight='bold', fontsize=16, color=WHITE)
+ax3.set_ylabel('Track Wetness Index (0=Dry, 1=Wet)', fontweight='bold', fontsize=16, color=WHITE)
+ax3.set_title('Track Condition Evolution Throughout Race',
+             fontweight='bold', fontsize=20, color=WHITE, pad=20)
+ax3.legend(fontsize=13, loc='upper right', framealpha=0.95, facecolor=BLUE_PRIMARY,
+          edgecolor=WHITE, labelcolor=WHITE)
+ax3.grid(True, alpha=0.25, color=WHITE, linestyle='--', linewidth=0.8)
+ax3.tick_params(colors=WHITE, labelsize=12)
+ax3.set_ylim(-0.05, max(df['wetness'].max() * 1.1, 0.5))
+
+# Add drying rate annotation
+drying_text = f'Drying Rate: {OPTIMAL_PARAMS["drying_rate"]:.3f} per lap'
+ax3.text(0.02, 0.98, drying_text, transform=ax3.transAxes,
+        fontsize=13, verticalalignment='top', color=WHITE,
+        bbox=dict(boxstyle='round', facecolor=BLUE_PRIMARY, alpha=0.9, edgecolor=WHITE))
+
+plt.tight_layout()
+graph3_file = output_dir / f'3_wetness_{YEAR}_{RACE}_{DRIVER}.png'
+plt.savefig(graph3_file, dpi=300, bbox_inches='tight', facecolor=BLUE_DARK)
+print(f"[OK] Graph 3 saved: {graph3_file}")
+plt.close()
+
+# ============================================================================
+# GRAPH 4: Error Distribution Histogram
+# ============================================================================
+fig4, ax4 = plt.subplots(figsize=(14, 8), facecolor=BLUE_DARK)
+ax4.set_facecolor(BLUE_PRIMARY)
+
+# Create histogram with blue gradient
+n, bins, patches = ax4.hist(df['residual'], bins=30, alpha=0.85,
+                            edgecolor=WHITE, linewidth=1.5, color=BLUE_LIGHT)
+
+# Color bars based on distance from zero
+for i, patch in enumerate(patches):
+    bin_center = (bins[i] + bins[i+1]) / 2
+    intensity = 1 - min(abs(bin_center) / max(abs(df['residual'])), 1)
+    patch.set_facecolor(plt.cm.Blues(0.4 + intensity * 0.5))
+
+# Reference lines
+ax4.axvline(0, color=ORANGE_ACCENT, linestyle='-', linewidth=3.5,
+           alpha=0.95, label='Perfect Prediction', zorder=3)
+ax4.axvline(rmse, color='#00FF88', linestyle='--', linewidth=2.5,
+           label=f'±RMSE ({rmse:.2f}s)', alpha=0.9, zorder=2)
+ax4.axvline(-rmse, color='#00FF88', linestyle='--', linewidth=2.5, alpha=0.9, zorder=2)
+
+# Styling
+ax4.set_xlabel('Prediction Error (seconds)', fontweight='bold', fontsize=16, color=WHITE)
+ax4.set_ylabel('Frequency (Number of Laps)', fontweight='bold', fontsize=16, color=WHITE)
+ax4.set_title('Model Error Distribution',
+             fontweight='bold', fontsize=20, color=WHITE, pad=20)
+ax4.legend(fontsize=13, loc='upper right', framealpha=0.95, facecolor=BLUE_PRIMARY,
+          edgecolor=WHITE, labelcolor=WHITE)
+ax4.grid(True, alpha=0.25, color=WHITE, linestyle='--', linewidth=0.8, axis='y')
+ax4.tick_params(colors=WHITE, labelsize=12)
+
+# Add statistics box
+stats_text = f'Mean Error: {df["residual"].mean():.2f}s\nStd Dev: {df["residual"].std():.2f}s\nRMSE: {rmse:.2f}s\nMAE: {mae:.2f}s'
+ax4.text(0.02, 0.98, stats_text, transform=ax4.transAxes,
+        fontsize=12, verticalalignment='top', color=WHITE, family='monospace',
+        bbox=dict(boxstyle='round', facecolor=BLUE_PRIMARY, alpha=0.9, edgecolor=WHITE))
+
+plt.tight_layout()
+graph4_file = output_dir / f'4_error_distribution_{YEAR}_{RACE}_{DRIVER}.png'
+plt.savefig(graph4_file, dpi=300, bbox_inches='tight', facecolor=BLUE_DARK)
+print(f"[OK] Graph 4 saved: {graph4_file}")
+plt.close()
+
+# ============================================================================
+# Summary
+# ============================================================================
 print("\n" + "="*80)
 print("PREDICTION COMPLETE")
 print("="*80)
@@ -297,5 +557,11 @@ elif rmse < 5:
 else:
     print(f"\nModel Status: OK (RMSE = {rmse:.3f}s)")
 print(f"\nNote: Model was calibrated on Monaco 2023. Performance may vary on other tracks.")
-
-plt.show()
+print(f"\nPresentation graphs saved to: {output_dir}/")
+print("  - 1_lap_times_baseline_*.png (Baseline Prediction)")
+print("  - 1a_lap_times_15pct_upgrade_*.png (15% Tire Upgrade Scenario)")
+print("  - 1a_lap_times_25pct_upgrade_*.png (25% Tire Upgrade Scenario)")
+print("  - 1a_lap_times_50pct_upgrade_*.png (50% Tire Upgrade Scenario)")
+print("  - 2_residuals_*.png (Prediction Accuracy)")
+print("  - 3_wetness_*.png (Track Conditions)")
+print("  - 4_error_distribution_*.png (Statistical Analysis)")

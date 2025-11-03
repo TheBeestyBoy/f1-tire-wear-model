@@ -17,7 +17,12 @@
       "Bash(git config:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" download_all_f1_data.py)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -m pip install fastf1 pandas numpy matplotlib seaborn)",
+      "Bash(timeout 10 ping:*)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" download_sample_f1_data.py)",
+      "Bash(timeout 15 ping:*)"
     ],
     "deny": [],
     "ask": []
