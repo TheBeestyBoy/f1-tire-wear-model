@@ -22,7 +22,8 @@
       "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -m pip install fastf1 pandas numpy matplotlib seaborn)",
       "Bash(timeout 10 ping:*)",
       "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" download_sample_f1_data.py)",
-      "Bash(timeout 15 ping:*)"
+      "Bash(timeout 15 ping:*)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" analyze_data.py)"
     ],
     "deny": [],
     "ask": []
