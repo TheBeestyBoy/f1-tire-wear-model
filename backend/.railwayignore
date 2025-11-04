@@ -1,0 +1,49 @@
+# Railway ignore file
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.venv
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data files (too large for deployment - download at runtime if needed)
+data/*.txt
+data/books/
+
+# Visualizations (generated at runtime)
+visualizations/
+
+# Model checkpoints (keep only final models, not training checkpoints)
+saved_models/model_best.pt
+saved_models/model_val_acc_*_202*.pt
+saved_models/model_val_acc_*_202*.json
+saved_models/tokenizer_val_acc_*_202*.pkl
+
+# Training scripts
+scripts/download_data.py
+scripts/download_training_books.py
+scripts/combine_bibles.py
+scripts/extract_vocabulary.py
+
+# Development files
+*.log
+.DS_Store

@@ -23,7 +23,9 @@
       "Bash(timeout 10 ping:*)",
       "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" download_sample_f1_data.py)",
       "Bash(timeout 15 ping:*)",
-      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" analyze_data.py)"
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" analyze_data.py)",
+      "Bash(del /Q TextGenerator.tsx ModelAnalytics.tsx 2)",
+      "Bash(move App.tsx App_old.tsx.bak 2)"
     ],
     "deny": [],
     "ask": []

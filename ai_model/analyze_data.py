@@ -133,11 +133,11 @@ print(f"  Params:  ~{params:,}")
 print(f"  Sample/Param ratio: {ratio:.1f}")
 
 if ratio > 10:
-    print(f"  ✓ EXCELLENT - Very low overfitting risk!")
+    print(f"  [OK] EXCELLENT - Very low overfitting risk!")
 elif ratio > 5:
-    print(f"  ✓ GOOD - Adequate dataset size")
+    print(f"  [OK] GOOD - Adequate dataset size")
 else:
-    print(f"  ⚠ MODERATE - Consider simpler model")
+    print(f"  [WARNING] MODERATE - Consider simpler model")
 
 # Save feature list
 feature_file = Path('./data/model_features.txt')

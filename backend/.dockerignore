@@ -1,0 +1,94 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Large training data files (don't deploy)
+data/*.txt
+data/books/
+
+# Training/download scripts (not needed in production)
+scripts/download_data.py
+scripts/download_training_books.py
+scripts/combine_bibles.py
+scripts/extract_vocabulary.py
+
+# Visualizations (generated at runtime)
+visualizations/
+
+# Model training scripts (not needed in production)
+train.py
+train_optimal.py
+train_improved.py
+train_hybrid.py
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+
+# Railway files
+.railway/
+railway.json
+
+# Documentation
+README.md
+*.md
+
+# Exclude ALL large model checkpoint files
+# We'll use a build script to copy only the production model
+saved_models/model_best.pt
+saved_models/model_val_acc_20.pt
+saved_models/model_val_acc_20_20251027_204408.pt
+saved_models/model_val_acc_20_20251027_204408_config.json
+saved_models/model_val_acc_20_config.json
+saved_models/tokenizer_val_acc_20.pkl
+saved_models/tokenizer_val_acc_20_20251027_204408.pkl
+saved_models/model_val_acc_21_20251027_173507.pt
+saved_models/model_val_acc_21_20251027_173507_config.json
+saved_models/tokenizer_val_acc_21_20251027_173507.pkl
+saved_models/tokenizer.pk1
+
+# Only keep the PRODUCTION model files that app expects:
+# - saved_models/model_val_acc_21.pt
+# - saved_models/model_val_acc_21_config.json
+# - saved_models/tokenizer_val_acc_21.pkl
+# OR the default names:
+# - saved_models/model.pt
+# - saved_models/tokenizer.pkl
+# - saved_models/model_config.json
