@@ -25,7 +25,9 @@
       "Bash(timeout 15 ping:*)",
       "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" analyze_data.py)",
       "Bash(del /Q TextGenerator.tsx ModelAnalytics.tsx 2)",
-      "Bash(move App.tsx App_old.tsx.bak 2)"
+      "Bash(move App.tsx App_old.tsx.bak 2)",
+      "Bash(del \"backend\\app\\main.py\" \"backend\\app\\text_generator.py\" \"backend\\app\\text_generator_limited_vocab.py\" \"backend\\app\\models.py\")",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
