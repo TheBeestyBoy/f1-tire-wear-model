@@ -1,0 +1,8 @@
+scenario,predicted_time,expected_behavior,tire_age,compound,track_temp,rainfall
+"Baseline (Dry, Medium, Fresh)",108.224174,Fast lap time (70-80s),5,MEDIUM,30.0,0.0
+Old Tires (35 laps old),108.66601,Slower than baseline (degradation),35,MEDIUM,30.0,0.0
+Wet Track (Rain),137.20767,Much slower (wet conditions),5,INTER,20.0,10.0
+Hot Dry Track,104.80833,Fast but hot tires degrade faster,10,HARD,45.0,0.0
+Cold Track,111.971054,Slower (less grip in cold),5,SOFT,15.0,0.0
+Old Tires + Wet (Worst Case),151.18929,Very slow (multiple negative factors),40,MEDIUM,18.0,15.0
+"Optimal (Fresh Softs, Perfect Weather)",104.80558,Fastest possible lap time,1,SOFT,28.0,0.0

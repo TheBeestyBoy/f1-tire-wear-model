@@ -91,6 +91,51 @@ class AvailableRace(BaseModel):
 class AvailableRacesResponse(BaseModel):
     races: List[AvailableRace]
 
+# Game Mode Simulation Models
+class SimulateRequest(BaseModel):
+    track: Optional[str] = Field(default=None, description="Track name (e.g., 'Monaco Grand Prix')")
+    compound: str = Field(default="MEDIUM", description="Tire compound: SOFT, MEDIUM, HARD, INTERMEDIATE, WET")
+    tire_age: int = Field(default=15, ge=0, le=50, description="Tire age in laps")
+    track_temp: float = Field(default=30.0, ge=0.0, le=60.0, description="Track temperature in Celsius")
+    air_temp: float = Field(default=25.0, ge=0.0, le=50.0, description="Air temperature in Celsius")
+    rainfall: float = Field(default=0.0, ge=0.0, le=50.0, description="Rainfall in mm")
+    humidity: float = Field(default=50.0, ge=0.0, le=100.0, description="Humidity percentage")
+    lap_number: int = Field(default=30, ge=1, le=100, description="Current lap number")
+    fuel_load: Optional[float] = Field(default=0.5, ge=0.0, le=1.0, description="Fuel load factor (1.0 = full tank)")
+    add_noise: bool = Field(default=False, description="Add random noise for variability")
+
+class SimulateResponse(BaseModel):
+    predicted_lap_time: float
+    configuration: Dict[str, Any]
+    message: str
+
+class SimulateStintRequest(BaseModel):
+    laps: int = Field(default=20, ge=1, le=100, description="Number of laps to simulate")
+    track: Optional[str] = Field(default=None, description="Track name (e.g., 'Monaco Grand Prix')")
+    compound: str = Field(default="MEDIUM")
+    tire_age: int = Field(default=0, ge=0, le=50)
+    track_temp: float = Field(default=30.0)
+    air_temp: float = Field(default=25.0)
+    rainfall: float = Field(default=0.0)
+    humidity: float = Field(default=50.0)
+    lap_number: int = Field(default=1)
+    fuel_load: float = Field(default=1.0)
+
+class SimulateStintResponse(BaseModel):
+    laps: List[Dict[str, Any]]
+    summary: Dict[str, Any]
+
+class WeatherPresetRequest(BaseModel):
+    weather: str = Field(default="DRY", description="Weather preset: DRY, DRIZZLE, RAIN, HEAVY_RAIN, HOT, COLD")
+    compound: str = Field(default="MEDIUM")
+    tire_age: int = Field(default=15)
+    lap_number: int = Field(default=30)
+
+class WeatherPresetResponse(BaseModel):
+    predicted_lap_time: float
+    weather_conditions: Dict[str, float]
+    configuration: Dict[str, Any]
+
 # ============================================================================
 #                          F1 MODEL WRAPPER
 # ============================================================================
@@ -334,16 +379,26 @@ class F1Predictor:
 # ============================================================================
 
 predictor = None
+game_simulator = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown events"""
-    global predictor
+    global predictor, game_simulator
     try:
         model_dir = Path(__file__).parent.parent.parent / 'ai_model'
         predictor = F1Predictor(model_dir)
         predictor.load_model()
         print("[OK] F1 Predictor initialized")
+
+        # Load game simulator
+        try:
+            from game_simulator import F1GameSimulator
+            game_simulator = F1GameSimulator(model_dir=model_dir / 'models')
+            print("[OK] F1 Game Simulator initialized")
+        except Exception as e:
+            print(f"[WARNING] Game simulator not available: {e}")
+
     except Exception as e:
         print(f"[ERROR] Failed to initialize: {e}")
 
@@ -477,6 +532,192 @@ async def get_architecture():
     if not path.exists():
         raise HTTPException(status_code=404, detail="Visualization not found")
     return FileResponse(path)
+
+# ============================================================================
+#                      GAME MODE SIMULATION ENDPOINTS
+# ============================================================================
+
+@app.post("/simulate", response_model=SimulateResponse)
+async def simulate_lap(request: SimulateRequest):
+    """
+    Simulate a single lap with user-configured parameters.
+
+    This endpoint allows full customization of track conditions, tire state,
+    and weather parameters to generate synthetic lap time predictions.
+    """
+    if game_simulator is None:
+        raise HTTPException(status_code=503, detail="Game simulator not available")
+
+    try:
+        # Prepare configuration
+        config = {
+            'compound': request.compound.upper(),
+            'tire_age': request.tire_age,
+            'track_temp': request.track_temp,
+            'air_temp': request.air_temp,
+            'rainfall': request.rainfall,
+            'humidity': request.humidity,
+            'lap_number': request.lap_number,
+            'add_noise': request.add_noise
+        }
+
+        if request.track is not None:
+            config['track'] = request.track
+
+        if request.fuel_load is not None:
+            config['fuel_load'] = request.fuel_load
+
+        # Simulate lap
+        lap_time = game_simulator.simulate_lap(**config)
+
+        return SimulateResponse(
+            predicted_lap_time=lap_time,
+            configuration=config,
+            message=f"Simulated lap with {request.compound} tires ({request.tire_age} laps old) in {request.rainfall}mm rainfall"
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/simulate/stint", response_model=SimulateStintResponse)
+async def simulate_stint(request: SimulateStintRequest):
+    """
+    Simulate a complete tire stint (multiple laps with degrading tires).
+
+    This models tire degradation over multiple laps with decreasing fuel load.
+    """
+    if game_simulator is None:
+        raise HTTPException(status_code=503, detail="Game simulator not available")
+
+    try:
+        # Prepare configuration
+        config = {
+            'compound': request.compound.upper(),
+            'tire_age': request.tire_age,
+            'track_temp': request.track_temp,
+            'air_temp': request.air_temp,
+            'rainfall': request.rainfall,
+            'humidity': request.humidity,
+            'lap_number': request.lap_number,
+            'fuel_load': request.fuel_load
+        }
+
+        if request.track is not None:
+            config['track'] = request.track
+
+        # Simulate stint
+        stint_results = game_simulator.simulate_stint(laps=request.laps, **config)
+
+        # Format results
+        laps = []
+        for lap_num, lap_time in stint_results:
+            laps.append({
+                'lap_number': lap_num,
+                'lap_time': lap_time,
+                'tire_age': request.tire_age + (lap_num - request.lap_number)
+            })
+
+        # Calculate summary statistics
+        lap_times = [lap['lap_time'] for lap in laps]
+        summary = {
+            'total_laps': request.laps,
+            'total_time': sum(lap_times),
+            'average_lap_time': np.mean(lap_times),
+            'fastest_lap': min(lap_times),
+            'slowest_lap': max(lap_times),
+            'degradation': lap_times[-1] - lap_times[0] if len(lap_times) > 1 else 0.0
+        }
+
+        return SimulateStintResponse(
+            laps=laps,
+            summary=summary
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/simulate/weather", response_model=WeatherPresetResponse)
+async def simulate_with_weather_preset(request: WeatherPresetRequest):
+    """
+    Simulate a lap using a weather preset.
+
+    Presets: DRY, DRIZZLE, RAIN, HEAVY_RAIN, HOT, COLD
+    """
+    if game_simulator is None:
+        raise HTTPException(status_code=503, detail="Game simulator not available")
+
+    try:
+        # Validate weather preset
+        valid_presets = ['DRY', 'DRIZZLE', 'RAIN', 'HEAVY_RAIN', 'HOT', 'COLD']
+        weather = request.weather.upper()
+
+        if weather not in valid_presets:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid weather preset. Valid options: {', '.join(valid_presets)}"
+            )
+
+        # Simulate with preset
+        lap_time = game_simulator.simulate_with_weather_preset(
+            weather=weather,
+            compound=request.compound.upper(),
+            tire_age=request.tire_age,
+            lap_number=request.lap_number
+        )
+
+        # Get weather conditions from preset
+        weather_conditions = game_simulator.weather_presets[weather]
+
+        return WeatherPresetResponse(
+            predicted_lap_time=lap_time,
+            weather_conditions=weather_conditions,
+            configuration={
+                'weather_preset': weather,
+                'compound': request.compound.upper(),
+                'tire_age': request.tire_age,
+                'lap_number': request.lap_number
+            }
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/simulate/presets")
+async def get_weather_presets():
+    """Get available weather presets and their conditions"""
+    if game_simulator is None:
+        raise HTTPException(status_code=503, detail="Game simulator not available")
+
+    return {
+        'presets': list(game_simulator.weather_presets.keys()),
+        'conditions': game_simulator.weather_presets
+    }
+
+@app.get("/simulate/tracks")
+async def get_tracks():
+    """
+    Get list of all available F1 tracks with their statistics.
+
+    Returns track data including:
+    - Average lap time across all drivers/years
+    - Model accuracy (RMSE, MAE, R²) on that track
+    - Lap time range (min/max)
+    """
+    if game_simulator is None:
+        raise HTTPException(status_code=503, detail="Game simulator not available")
+
+    tracks = game_simulator.get_tracks()
+
+    return {
+        'tracks': tracks,
+        'count': len(tracks)
+    }
 
 if __name__ == "__main__":
     import uvicorn

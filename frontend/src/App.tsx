@@ -39,6 +39,9 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import SpeedIcon from '@mui/icons-material/Speed';
+import { GameModeSimulator } from './GameModeSimulator';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import HistoryIcon from '@mui/icons-material/History';
 
 // ============================================================================
 //                          TYPES
@@ -142,6 +145,9 @@ const api = {
 // ============================================================================
 
 export default function F1App() {
+  // Mode toggle: 'historical' or 'game'
+  const [appMode, setAppMode] = useState<'historical' | 'game'>('historical');
+
   const [tabIndex, setTabIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -496,31 +502,75 @@ export default function F1App() {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box mb={4}>
-        <Typography variant="h3" gutterBottom fontWeight="bold">
-          🏎️ F1 Tire Wear AI Predictor
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          AI-Powered Lap Time Predictions with Scenario Comparison
-        </Typography>
-
-        <Box mt={2} display="flex" gap={1} flexWrap="wrap">
-          <Chip icon={<SpeedIcon />} label={`RMSE: ${modelInfo.test_rmse.toFixed(3)}s`} color="success" />
-          <Chip label={`MAE: ${modelInfo.test_mae.toFixed(3)}s`} />
-          <Chip label={`R²: ${modelInfo.test_r2.toFixed(4)}`} />
-          <Chip label={`${availableRaces.length} Races Available`} variant="outlined" />
+      {/* Mode Toggle */}
+      <Paper elevation={3} sx={{ mb: 3, p: 2 }}>
+        <Box display="flex" alignItems="center" justifyContent="center" gap={2}>
+          <Button
+            variant={appMode === 'historical' ? 'contained' : 'outlined'}
+            startIcon={<HistoryIcon />}
+            onClick={() => setAppMode('historical')}
+            sx={{
+              backgroundColor: appMode === 'historical' ? '#e10600' : 'transparent',
+              color: appMode === 'historical' ? 'white' : '#e10600',
+              '&:hover': {
+                backgroundColor: appMode === 'historical' ? '#b00500' : 'rgba(225, 6, 0, 0.1)',
+              },
+              fontWeight: 'bold',
+              px: 4,
+            }}
+          >
+            Historical Data
+          </Button>
+          <Typography variant="h6" color="text.secondary">|</Typography>
+          <Button
+            variant={appMode === 'game' ? 'contained' : 'outlined'}
+            startIcon={<SportsEsportsIcon />}
+            onClick={() => setAppMode('game')}
+            sx={{
+              backgroundColor: appMode === 'game' ? '#e10600' : 'transparent',
+              color: appMode === 'game' ? 'white' : '#e10600',
+              '&:hover': {
+                backgroundColor: appMode === 'game' ? '#b00500' : 'rgba(225, 6, 0, 0.1)',
+              },
+              fontWeight: 'bold',
+              px: 4,
+            }}
+          >
+            Game Mode
+          </Button>
         </Box>
-      </Box>
+      </Paper>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {/* Conditional Rendering Based on Mode */}
+      {appMode === 'game' ? (
+        <GameModeSimulator />
+      ) : (
+        <>
+          {/* Header */}
+          <Box mb={4}>
+            <Typography variant="h3" gutterBottom fontWeight="bold">
+              🏎️ F1 Tire Wear AI Predictor
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              AI-Powered Lap Time Predictions with Scenario Comparison
+            </Typography>
 
-      {/* Main Content */}
-      <Grid container spacing={3}>
+            <Box mt={2} display="flex" gap={1} flexWrap="wrap">
+              <Chip icon={<SpeedIcon />} label={`RMSE: ${modelInfo.test_rmse.toFixed(3)}s`} color="success" />
+              <Chip label={`MAE: ${modelInfo.test_mae.toFixed(3)}s`} />
+              <Chip label={`R²: ${modelInfo.test_r2.toFixed(4)}`} />
+              <Chip label={`${availableRaces.length} Races Available`} variant="outlined" />
+            </Box>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Main Content */}
+          <Grid container spacing={3}>
         {/* Left Panel - Configuration */}
         <Grid item xs={12} md={4}>
           <Paper elevation={3} sx={{ p: 3 }}>
@@ -806,6 +856,8 @@ export default function F1App() {
           )}
         </Grid>
       </Grid>
+        </>
+      )}
     </Container>
   );
 }
