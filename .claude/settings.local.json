@@ -27,7 +27,10 @@
       "Bash(del /Q TextGenerator.tsx ModelAnalytics.tsx 2)",
       "Bash(move App.tsx App_old.tsx.bak 2)",
       "Bash(del \"backend\\app\\main.py\" \"backend\\app\\text_generator.py\" \"backend\\app\\text_generator_limited_vocab.py\" \"backend\\app\\models.py\")",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" predict_lap_times.py)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" dynamic_race_simulator.py)",
+      "Bash(\"C:\\Users\\Soren\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" generate_system_diagram.py)"
     ],
     "deny": [],
     "ask": []
